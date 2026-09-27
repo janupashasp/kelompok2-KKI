@@ -2,6 +2,7 @@
 
 const readline = require("readline");
 
+
 /* =========================================================
    KONSTANTA
 ========================================================= */
@@ -32,7 +33,7 @@ function tanya(pertanyaan) {
 ========================================================= */
 
 /**
- * Mengecek apakah karakter merupakan huruf A-Z.
+ * Mengecek apakah karakter merupakan huruf A-Z atau a-z.
  */
 function isLetter(character) {
     return /^[A-Za-z]$/.test(character);
@@ -53,12 +54,10 @@ function charToNumber(character) {
 
 
 /**
- * Mengubah angka 0-25 menjadi huruf.
- *
- * lowercase = true  -> huruf kecil
- * lowercase = false -> huruf besar
+ * Mengubah angka 0-25 kembali menjadi huruf.
  */
 function numberToChar(value, lowercase = false) {
+
     const normalizedValue =
         ((value % ALPHABET_SIZE) + ALPHABET_SIZE) %
         ALPHABET_SIZE;
@@ -71,26 +70,14 @@ function numberToChar(value, lowercase = false) {
 }
 
 
-/**
- * Membersihkan ciphertext untuk kebutuhan analisis.
- *
- * Hanya huruf A-Z yang dipertahankan.
- */
-function cleanCiphertext(ciphertext) {
-    return ciphertext
-        .toUpperCase()
-        .replace(/[^A-Z]/g, "");
-}
-
-
 /* =========================================================
    INPUT VALIDATION
 ========================================================= */
 
 /**
- * Validasi plaintext/ciphertext dan key.
+ * Memvalidasi plaintext/ciphertext dan key.
  *
- * Key hanya boleh mengandung A-Z.
+ * Key hanya boleh mengandung huruf A-Z.
  */
 function validasi(teks, key) {
 
@@ -121,14 +108,16 @@ function validasi(teks, key) {
  * Fungsi inti Vigenère Cipher.
  *
  * mode:
- * - "encrypt"
- * - "decrypt"
+ * - encrypt
+ * - decrypt
  *
- * Return:
- * {
- *   result: hasil akhir,
- *   steps: detail setiap langkah
- * }
+ * Repeating key otomatis diterapkan:
+ *
+ * Plaintext : ATTACKATDAWN
+ * Key      : LEMON
+ *
+ * Key yang digunakan:
+ * L E M O N L E M O N L E
  */
 function processVigenere(text, key, mode) {
 
@@ -146,9 +135,13 @@ function processVigenere(text, key, mode) {
 
 
         /*
-         * Karakter selain A-Z tidak dienkripsi.
-         * Karakter tersebut juga tidak menggunakan
-         * posisi key.
+         * Karakter selain huruf tidak diproses.
+         *
+         * Contoh:
+         * "HELLO 123!"
+         *
+         * spasi, angka, dan tanda baca
+         * tetap dipertahankan.
          */
         if (!isLetter(inputCharacter)) {
 
@@ -160,8 +153,8 @@ function processVigenere(text, key, mode) {
                 key: "-",
                 inputValue: "-",
                 shift: "-",
-                outputValue: "-",
                 output: inputCharacter,
+                outputValue: "-",
                 calculation: "Karakter tidak diproses",
             });
 
@@ -170,15 +163,13 @@ function processVigenere(text, key, mode) {
 
 
         /*
-         * Mengambil karakter key secara berulang.
+         * Repeating key.
          *
-         * Contoh:
+         * Jika key = KEY
          *
-         * Text = HELLOWORLD
-         * Key  = KEY
+         * maka:
          *
-         * Key sequence:
-         * K E Y K E Y K E Y K
+         * K E Y K E Y K E Y ...
          */
         const keyCharacter =
             normalizedKey[
@@ -218,7 +209,8 @@ function processVigenere(text, key, mode) {
         const outputCharacter =
             numberToChar(
                 outputValue,
-                inputCharacter === inputCharacter.toLowerCase()
+                inputCharacter ===
+                inputCharacter.toLowerCase()
             );
 
 
@@ -226,6 +218,7 @@ function processVigenere(text, key, mode) {
 
 
         let calculation;
+
 
         if (mode === "encrypt") {
 
@@ -249,15 +242,15 @@ function processVigenere(text, key, mode) {
             key: keyCharacter,
             inputValue,
             shift,
-            outputValue,
             output: outputCharacter,
+            outputValue,
             calculation,
         });
 
 
         /*
-         * Key hanya bergeser jika karakter input
-         * merupakan huruf.
+         * Key hanya maju jika karakter input
+         * berupa huruf.
          */
         keyIndex++;
     }
@@ -271,9 +264,10 @@ function processVigenere(text, key, mode) {
 
 
 /**
- * Enkripsi Vigenère.
+ * Fungsi enkripsi.
  */
 function encrypt(plaintext, key) {
+
     return processVigenere(
         plaintext,
         key,
@@ -283,9 +277,10 @@ function encrypt(plaintext, key) {
 
 
 /**
- * Dekripsi Vigenère.
+ * Fungsi dekripsi.
  */
 function decrypt(ciphertext, key) {
+
     return processVigenere(
         ciphertext,
         key,
@@ -295,7 +290,7 @@ function decrypt(ciphertext, key) {
 
 
 /* =========================================================
-   VISUALISASI LANGKAH ALGORITMA
+   VISUALISASI ALGORITMA
 ========================================================= */
 
 function tampilkanLangkah(steps) {
@@ -315,15 +310,8 @@ function tampilkanLangkah(steps) {
     );
 
     console.log(
-        "\nA = 0, B = 1, ..., Z = 25\n"
+        "\nPemetaan: A = 0, B = 1, ..., Z = 25\n"
     );
-
-
-    const displayedSteps =
-        steps.slice(
-            0,
-            MAX_VISUALIZATION_STEPS
-        );
 
 
     console.log(
@@ -337,6 +325,13 @@ function tampilkanLangkah(steps) {
 
 
     console.log("-".repeat(47));
+
+
+    const displayedSteps =
+        steps.slice(
+            0,
+            MAX_VISUALIZATION_STEPS
+        );
 
 
     displayedSteps.forEach((step) => {
@@ -355,13 +350,14 @@ function tampilkanLangkah(steps) {
     if (steps.length > MAX_VISUALIZATION_STEPS) {
 
         console.log(
-            `\n... hanya menampilkan ${MAX_VISUALIZATION_STEPS} ` +
-            `dari ${steps.length} langkah.`
+            `\n... hanya menampilkan ` +
+            `${MAX_VISUALIZATION_STEPS} dari ` +
+            `${steps.length} langkah.`
         );
     }
 
 
-    console.log("\nDetail perhitungan:");
+    console.log("\nDetail Perhitungan:");
 
     displayedSteps.forEach((step) => {
 
@@ -377,17 +373,15 @@ function tampilkanLangkah(steps) {
 ========================================================= */
 
 /*
- * Test case sengaja dibuat berbeda dari contoh:
+ * Test case dibuat berbeda dari contoh dasar dosen.
  *
- * Contoh dosen:
- * HELLO + KEY
- *
- * Test kita:
- * 1. DATASAINS
- * 2. KULIAH KRIPTO
- * 3. RAHASIA 2026!
+ * Setiap test case memiliki:
+ * - Plaintext
+ * - Key
+ * - Expected Ciphertext
  */
 const TEST_CASES = [
+
     {
         plaintext: "DATASAINS",
         key: "UGM",
@@ -408,6 +402,9 @@ const TEST_CASES = [
 ];
 
 
+/**
+ * Menjalankan semua test case.
+ */
 function jalankanTestCases() {
 
     console.log("\n============================================================");
@@ -441,20 +438,46 @@ function jalankanTestCases() {
         }
 
 
-        console.log(`Test Case ${index + 1}`);
-        console.log(`Input            : ${testCase.plaintext}`);
-        console.log(`Key              : ${testCase.key}`);
-        console.log(`Your Output      : ${output}`);
-        console.log(`Expected Output  : ${testCase.expected}`);
-        console.log(`Status            : ${status}`);
+        console.log(
+            `Test Case ${index + 1}`
+        );
+
+        console.log(
+            `Plaintext           : ${testCase.plaintext}`
+        );
+
+        console.log(
+            `Key                 : ${testCase.key}`
+        );
+
+        console.log(
+            `Expected Ciphertext : ${testCase.expected}`
+        );
+
+        console.log(
+            `Your Output         : ${output}`
+        );
+
+        console.log(
+            `Status              : ${status}`
+        );
 
         console.log("-".repeat(60));
     });
 
 
-    console.log("\nSUMMARY");
-    console.log(`PASS : ${passed}`);
-    console.log(`FAIL : ${failed}`);
+    console.log("\n============================================================");
+    console.log("TEST SUMMARY");
+    console.log("============================================================");
+
+    console.log(
+        `PASS : ${passed}`
+    );
+
+    console.log(
+        `FAIL : ${failed}`
+    );
+
     console.log(
         `TOTAL: ${TEST_CASES.length}`
     );
@@ -462,310 +485,352 @@ function jalankanTestCases() {
 
 
 /* =========================================================
-   KASISKI-STYLE SECURITY ANALYSIS
+   SECURITY / ATTACK FEATURE
 ========================================================= */
 
 /**
- * Mencari pola/trigram yang berulang.
- *
- * Contoh:
- *
- * ABCXYZABC
- *
- * ABC muncul pada posisi 0 dan 6.
- */
-function findRepeatedNGrams(
-    ciphertext,
-    n = 3
-) {
-
-    const text =
-        cleanCiphertext(ciphertext);
-
-    const positions = {};
-
-
-    for (
-        let i = 0;
-        i <= text.length - n;
-        i++
-    ) {
-
-        const gram =
-            text.slice(i, i + n);
-
-
-        if (!positions[gram]) {
-            positions[gram] = [];
-        }
-
-
-        positions[gram].push(i);
-    }
-
-
-    return Object.entries(positions)
-
-        /*
-         * Hanya ambil pola yang muncul
-         * minimal dua kali.
-         */
-        .filter(([, indexes]) => {
-            return indexes.length >= 2;
-        })
-
-        .map(([gram, indexes]) => {
-
-            const distances = [];
-
-
-            for (
-                let i = 1;
-                i < indexes.length;
-                i++
-            ) {
-
-                distances.push(
-                    indexes[i] -
-                    indexes[i - 1]
-                );
-            }
-
-
-            return {
-                gram,
-                indexes,
-                distances,
-            };
-        });
-}
-
-
-/**
- * Mencari faktor dari suatu bilangan.
- *
- * Faktor yang dicari dibatasi sampai 12
- * karena kita ingin mencari kandidat
- * panjang key yang relatif pendek.
- */
-function getFactors(
-    number,
-    maxFactor = 12
-) {
-
-    const factors = [];
-
-
-    for (
-        let factor = 2;
-        factor <= maxFactor;
-        factor++
-    ) {
-
-        if (number % factor === 0) {
-            factors.push(factor);
-        }
-    }
-
-
-    return factors;
-}
-
-
-/**
- * Analisis Kasiski sederhana.
+ * Menganalisis penggunaan key yang sama pada dua pesan.
  *
  * Tujuan:
- * mencari kemungkinan panjang key berdasarkan
- * jarak antar pola ciphertext yang berulang.
+ * menunjukkan bahwa penggunaan key yang sama secara berulang
+ * pada pesan berbeda dapat mengungkap pola pada ciphertext.
  */
-function analyzeKasiski(ciphertext) {
+function demoKeyReuse(pesan1, pesan2, key) {
 
-    const repeatedPatterns =
-        findRepeatedNGrams(
-            ciphertext,
-            3
-        );
+    const hasil1 = encrypt(pesan1, key);
+    const hasil2 = encrypt(pesan2, key);
 
+    const ciphertext1 = hasil1.result;
+    const ciphertext2 = hasil2.result;
 
-    const candidateScores = {};
-
-
-    repeatedPatterns.forEach((pattern) => {
-
-        pattern.distances.forEach((distance) => {
-
-            const factors =
-                getFactors(distance);
-
-
-            factors.forEach((factor) => {
-
-                candidateScores[factor] =
-                    (candidateScores[factor] || 0) + 1;
-            });
-        });
-    });
-
-
-    const candidates =
-        Object.entries(candidateScores)
-
-            .map(([length, score]) => ({
-                length: Number(length),
-                score,
-            }))
-
-            .sort((a, b) => {
-                return b.score - a.score;
-            });
-
-
-    return {
-        cleanedLength:
-            cleanCiphertext(ciphertext).length,
-
-        repeatedPatterns,
-
-        candidates,
-    };
-}
-
-
-/**
- * Menampilkan hasil security analysis.
- */
-function tampilkanSecurityAnalysis(
-    ciphertext
-) {
-
-    const analysis =
-        analyzeKasiski(ciphertext);
+    const steps1 = hasil1.steps;
+    const steps2 = hasil2.steps;
 
 
     console.log("\n============================================================");
-    console.log("SECURITY / ATTACK ANALYSIS");
+    console.log("SECURITY / ATTACK FEATURE");
     console.log("============================================================");
 
+    console.log("\nDEMONSTRASI KEY REUSE / REPEATED KEY");
+
+
+    /* ---------------------------------------------------------
+       INFORMASI DASAR
+    --------------------------------------------------------- */
+
+    console.log("\n--- Informasi Dasar ---");
+
+    console.log(`Key yang digunakan : ${key.toUpperCase()}`);
+
+    console.log(`Panjang key        : ${key.length}`);
 
     console.log(
-        `\nPanjang ciphertext setelah dibersihkan: ` +
-        `${analysis.cleanedLength}`
+        "Kedua pesan dienkripsi menggunakan key yang sama."
     );
 
 
+    /* ---------------------------------------------------------
+       PESAN 1
+    --------------------------------------------------------- */
+
+    console.log("\n--- Pesan 1 ---");
+
+    console.log(`Plaintext : ${pesan1}`);
+
+    console.log(`Ciphertext: ${ciphertext1}`);
+
+
+    /* ---------------------------------------------------------
+       PESAN 2
+    --------------------------------------------------------- */
+
+    console.log("\n--- Pesan 2 ---");
+
+    console.log(`Plaintext : ${pesan2}`);
+
+    console.log(`Ciphertext: ${ciphertext2}`);
+
+
+    /* ---------------------------------------------------------
+       REPEATING KEY SEQUENCE
+    --------------------------------------------------------- */
+
+    const jumlahHuruf = Math.max(
+        pesan1.replace(/[^A-Za-z]/g, "").length,
+        pesan2.replace(/[^A-Za-z]/g, "").length
+    );
+
+    let repeatedKey = "";
+
+    for (let i = 0; i < jumlahHuruf; i++) {
+        repeatedKey +=
+            key[i % key.length].toUpperCase();
+    }
+
+
+    console.log("\n--- Repeating Key ---");
+
     console.log(
-        "\nMetode: Kasiski-style repeated pattern analysis"
+        `Key asli      : ${key.toUpperCase()}`
+    );
+
+    console.log(
+        `Key yang repeat: ${repeatedKey}`
     );
 
 
-    /*
-     * Pola berulang
-     */
-    console.log(
-        "\n--- Pola Ciphertext yang Berulang ---"
+    /* ---------------------------------------------------------
+       POSISI CIPHERTEXT IDENTIK
+    --------------------------------------------------------- */
+
+    const posisiIdentik = [];
+
+    const jumlahPosisi = Math.min(
+        ciphertext1.length,
+        ciphertext2.length
     );
 
 
-    if (
-        analysis.repeatedPatterns.length === 0
-    ) {
+    for (let i = 0; i < jumlahPosisi; i++) {
+
+        const c1 = ciphertext1[i];
+        const c2 = ciphertext2[i];
+
+        /*
+         * Hanya bandingkan posisi yang keduanya
+         * merupakan huruf.
+         */
+        if (
+            isLetter(c1) &&
+            isLetter(c2) &&
+            c1.toUpperCase() === c2.toUpperCase()
+        ) {
+
+            posisiIdentik.push({
+                position: i + 1,
+                plaintext1: c1,
+                plaintext2: c2,
+                ciphertext: c1,
+                key: key[
+                    posisiIdentik.length %
+                    key.length
+                ].toUpperCase(),
+            });
+        }
+    }
+
+
+    /* ---------------------------------------------------------
+       POSISI YANG DIBANDINGKAN
+    --------------------------------------------------------- */
+
+    let posisiDibandingkan = 0;
+
+    for (let i = 0; i < jumlahPosisi; i++) {
+
+        if (
+            isLetter(ciphertext1[i]) &&
+            isLetter(ciphertext2[i])
+        ) {
+            posisiDibandingkan++;
+        }
+    }
+
+
+    /* ---------------------------------------------------------
+       HASIL ANALISIS
+    --------------------------------------------------------- */
+
+    const jumlahIdentik =
+        posisiIdentik.length;
+
+    const persentaseIdentik =
+        posisiDibandingkan === 0
+            ? 0
+            : (
+                jumlahIdentik /
+                posisiDibandingkan
+            ) * 100;
+
+
+    console.log(
+        "\n--- Posisi Ciphertext yang Identik ---"
+    );
+
+
+    if (posisiIdentik.length === 0) {
 
         console.log(
-            "Tidak ditemukan trigram berulang."
+            "Tidak ditemukan ciphertext yang identik " +
+            "pada posisi yang sama."
         );
 
     } else {
 
-        analysis.repeatedPatterns.forEach(
-            (pattern) => {
-
-                console.log(
-                    `Pola     : ${pattern.gram}`
-                );
-
-                console.log(
-                    `Posisi   : ${pattern.indexes.join(", ")}`
-                );
-
-                console.log(
-                    `Jarak    : ${pattern.distances.join(", ")}`
-                );
-
-                console.log();
-            }
+        console.log(
+            "Ditemukan karakter ciphertext yang sama " +
+            "pada posisi yang sama:\n"
         );
-    }
 
-
-    /*
-     * Kandidat panjang key
-     */
-    console.log(
-        "--- Kandidat Panjang Key ---"
-    );
-
-
-    if (analysis.candidates.length === 0) {
 
         console.log(
-            "Belum ditemukan kandidat panjang key."
+            "Posisi".padEnd(10) +
+            "C1".padEnd(8) +
+            "C2".padEnd(8) +
+            "Key".padEnd(8)
         );
 
-    } else {
+        console.log("-".repeat(34));
 
-        analysis.candidates.forEach(
-            (candidate, index) => {
 
-                console.log(
-                    `${index + 1}. ` +
-                    `Panjang key = ${candidate.length}, ` +
-                    `indikasi = ${candidate.score}`
-                );
-            }
+        posisiIdentik.forEach((data) => {
+
+            console.log(
+                String(data.position).padEnd(10) +
+                data.ciphertext.padEnd(8) +
+                data.ciphertext.padEnd(8) +
+                data.key.padEnd(8)
+            );
+        });
+    }
+
+
+    /* ---------------------------------------------------------
+       STATISTIK
+    --------------------------------------------------------- */
+
+    console.log("\n--- Statistik ---");
+
+    console.log(
+        `Posisi yang dibandingkan : ${posisiDibandingkan}`
+    );
+
+    console.log(
+        `Posisi ciphertext identik: ${jumlahIdentik}`
+    );
+
+    console.log(
+        `Persentase identik       : ${persentaseIdentik.toFixed(2)}%`
+    );
+
+
+    /* ---------------------------------------------------------
+       POSISI DALAM FORMAT SINGKAT
+    --------------------------------------------------------- */
+
+    if (jumlahIdentik > 0) {
+
+        const daftarPosisi =
+            posisiIdentik
+                .map((data) => data.position)
+                .join(", ");
+
+        console.log(
+            `\nDaftar posisi identik: [${daftarPosisi}]`
         );
     }
 
 
-    /*
-     * Penjelasan security
-     */
+    /* ---------------------------------------------------------
+       PERBANDINGAN KARAKTER
+    --------------------------------------------------------- */
+
     console.log(
-        "\n--- Penjelasan Keamanan ---"
+        "\n--- Perbandingan Posisi Ciphertext ---"
+    );
+
+
+    console.log(
+        "Posisi".padEnd(8) +
+        "C1".padEnd(8) +
+        "C2".padEnd(8) +
+        "Status"
+    );
+
+    console.log("-".repeat(34));
+
+
+    for (let i = 0; i < jumlahPosisi; i++) {
+
+        const c1 = ciphertext1[i];
+        const c2 = ciphertext2[i];
+
+
+        if (
+            !isLetter(c1) ||
+            !isLetter(c2)
+        ) {
+            continue;
+        }
+
+
+        const sama =
+            c1.toUpperCase() ===
+            c2.toUpperCase();
+
+
+        console.log(
+            String(i + 1).padEnd(8) +
+            c1.padEnd(8) +
+            c2.padEnd(8) +
+            (sama
+                ? "IDENTIK"
+                : "BERBEDA")
+        );
+    }
+
+
+    /* ---------------------------------------------------------
+       EXPLANATION
+    --------------------------------------------------------- */
+
+    console.log(
+        "\n--- Mengapa Ini Merupakan Kelemahan? ---"
+    );
+
+
+    console.log(
+        "Vigenère menggunakan key yang berulang untuk " +
+        "mengenkripsi karakter pesan."
     );
 
     console.log(
-        "Vigenère menggunakan key yang berulang."
+        "Ketika key yang sama digunakan kembali pada " +
+        "pesan yang berbeda, pola penggunaan key juga sama."
+    );
+
+
+    console.log(
+        "\nJika dua ciphertext memiliki karakter yang sama " +
+        "pada posisi yang sama,"
     );
 
     console.log(
-        "Jika key relatif pendek, pola tertentu pada plaintext"
+        "dengan asumsi key pada posisi tersebut juga sama, " +
+        "maka karakter plaintext pada posisi tersebut juga sama."
+    );
+
+
+    console.log(
+        "\nArtinya, penggunaan key yang sama secara berulang " +
+        "dapat memberikan informasi/pola tambahan kepada penyerang."
+    );
+
+
+    console.log(
+        "\nFitur ini hanya merupakan demonstrasi sederhana " +
+        "mengenai key reuse."
     );
 
     console.log(
-        "dapat menghasilkan pola ciphertext yang berulang."
-    );
-
-    console.log(
-        "Jarak antar pola tersebut dapat memberikan petunjuk"
-    );
-
-    console.log(
-        "mengenai kemungkinan panjang key."
-    );
-
-    console.log(
-        "\nCatatan: fitur ini hanya demonstrasi kelemahan,"
-    );
-
-    console.log(
-        "bukan full Vigenère cracker."
+        "Tidak dilakukan cryptanalysis atau pembobolan key " +
+        "secara penuh."
     );
 }
 
 
 /* =========================================================
-   DEMO ENKRIPSI
+   MENU ENKRIPSI
 ========================================================= */
 
 async function menuEnkripsi() {
@@ -811,12 +876,14 @@ async function menuEnkripsi() {
     );
 
 
+    console.log("\n--- Hasil Enkripsi ---");
+
     console.log(
-        `\nPlaintext : ${plaintext}`
+        `Plaintext : ${plaintext}`
     );
 
     console.log(
-        `Key       : ${key}`
+        `Key       : ${key.toUpperCase()}`
     );
 
     console.log(
@@ -829,7 +896,7 @@ async function menuEnkripsi() {
 
 
 /* =========================================================
-   DEMO DEKRIPSI
+   MENU DEKRIPSI
 ========================================================= */
 
 async function menuDekripsi() {
@@ -875,12 +942,14 @@ async function menuDekripsi() {
     );
 
 
+    console.log("\n--- Hasil Dekripsi ---");
+
     console.log(
-        `\nCiphertext: ${ciphertext}`
+        `Ciphertext: ${ciphertext}`
     );
 
     console.log(
-        `Key       : ${key}`
+        `Key       : ${key.toUpperCase()}`
     );
 
     console.log(
@@ -893,7 +962,7 @@ async function menuDekripsi() {
 
 
 /* =========================================================
-   SECURITY MENU
+   MENU SECURITY
 ========================================================= */
 
 async function menuSecurity() {
@@ -902,28 +971,106 @@ async function menuSecurity() {
     console.log("SECURITY / ATTACK FEATURE");
     console.log("============================================================");
 
+    console.log(
+        "\nFitur ini mendemonstrasikan penggunaan key yang sama"
+    );
 
-    const ciphertext =
+    console.log(
+        "untuk mengenkripsi dua pesan yang berbeda."
+    );
+
+    console.log(
+        "Tujuannya adalah menunjukkan pola yang dapat muncul"
+    );
+
+    console.log(
+        "akibat penggunaan repeated key.\n"
+    );
+
+
+    const pesan1 =
         await tanya(
-            "Masukkan Ciphertext: "
+            "Masukkan Pesan 1: "
         );
 
 
+    const pesan2 =
+        await tanya(
+            "Masukkan Pesan 2: "
+        );
+
+
+    const key =
+        await tanya(
+            "Masukkan Key yang sama untuk keduanya: "
+        );
+
+
+    /* ---------------------------------------------------------
+       VALIDASI
+    --------------------------------------------------------- */
+
     if (
-        !ciphertext ||
-        ciphertext.trim() === ""
+        !pesan1 ||
+        pesan1.trim() === ""
     ) {
 
         console.log(
-            "\nError: Ciphertext tidak boleh kosong."
+            "\nError: Pesan 1 tidak boleh kosong."
         );
 
         return;
     }
 
 
-    tampilkanSecurityAnalysis(
-        ciphertext
+    if (
+        !pesan2 ||
+        pesan2.trim() === ""
+    ) {
+
+        console.log(
+            "\nError: Pesan 2 tidak boleh kosong."
+        );
+
+        return;
+    }
+
+
+    if (
+        !key ||
+        key.trim() === ""
+    ) {
+
+        console.log(
+            "\nError: Key tidak boleh kosong."
+        );
+
+        return;
+    }
+
+
+    if (!/^[A-Za-z]+$/.test(key)) {
+
+        console.log(
+            "\nError: Format key tidak valid."
+        );
+
+        console.log(
+            "Key hanya boleh mengandung huruf A-Z."
+        );
+
+        return;
+    }
+
+
+    /* ---------------------------------------------------------
+       JALANKAN ANALISIS
+    --------------------------------------------------------- */
+
+    demoKeyReuse(
+        pesan1,
+        pesan2,
+        key
     );
 }
 
@@ -938,13 +1085,13 @@ async function tampilkanMenu() {
 
         console.log("\n");
         console.log("============================================================");
-        console.log("              VIGENÈRE CIPHER");
+        console.log("                    VIGENÈRE CIPHER");
         console.log("============================================================");
 
         console.log("1. Enkripsi");
         console.log("2. Dekripsi");
-        console.log("3. Jalankan Test Cases");
-        console.log("4. Security / Attack Analysis");
+        console.log("3. Test Cases");
+        console.log("4. Security / Attack Feature");
         console.log("5. Keluar");
 
 
@@ -957,22 +1104,30 @@ async function tampilkanMenu() {
         switch (pilihan.trim()) {
 
             case "1":
+
                 await menuEnkripsi();
+
                 break;
 
 
             case "2":
+
                 await menuDekripsi();
+
                 break;
 
 
             case "3":
+
                 jalankanTestCases();
+
                 break;
 
 
             case "4":
+
                 await menuSecurity();
+
                 break;
 
 
@@ -990,7 +1145,7 @@ async function tampilkanMenu() {
             default:
 
                 console.log(
-                    "\nError: Pilihan menu tidak valid."
+                    "\nError: Pilihan tidak valid."
                 );
 
                 console.log(
@@ -1002,7 +1157,7 @@ async function tampilkanMenu() {
 
 
 /* =========================================================
-   PROGRAM START
+   START PROGRAM
 ========================================================= */
 
 tampilkanMenu();
