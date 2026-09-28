@@ -1,6 +1,6 @@
 "use strict";
 
-const readline = require("readline");
+const isCLI = typeof module !== "undefined" && require.main === module;
 
 
 /* =========================================================
@@ -15,10 +15,10 @@ const MAX_VISUALIZATION_STEPS = 50;
    READLINE
 ========================================================= */
 
-const rl = readline.createInterface({
+const rl = isCLI ? require("readline").createInterface({
     input: process.stdin,
     output: process.stdout,
-});
+}) : null;
 
 
 function tanya(pertanyaan) {
@@ -496,15 +496,10 @@ function jalankanTestCases() {
  * pada pesan berbeda dapat mengungkap pola pada ciphertext.
  */
 function demoKeyReuse(pesan1, pesan2, key) {
-
-    const hasil1 = encrypt(pesan1, key);
-    const hasil2 = encrypt(pesan2, key);
-
-    const ciphertext1 = hasil1.result;
-    const ciphertext2 = hasil2.result;
-
-    const steps1 = hasil1.steps;
-    const steps2 = hasil2.steps;
+    const { ciphertext1, ciphertext2, repeatedKey, posisiIdentik,
+        posisiDibandingkan, jumlahIdentik, persentaseIdentik } =
+        analyzeKeyReuse(pesan1, pesan2, key);
+    const jumlahPosisi = Math.min(ciphertext1.length, ciphertext2.length);
 
 
     console.log("\n============================================================");
@@ -555,19 +550,6 @@ function demoKeyReuse(pesan1, pesan2, key) {
        REPEATING KEY SEQUENCE
     --------------------------------------------------------- */
 
-    const jumlahHuruf = Math.max(
-        pesan1.replace(/[^A-Za-z]/g, "").length,
-        pesan2.replace(/[^A-Za-z]/g, "").length
-    );
-
-    let repeatedKey = "";
-
-    for (let i = 0; i < jumlahHuruf; i++) {
-        repeatedKey +=
-            key[i % key.length].toUpperCase();
-    }
-
-
     console.log("\n--- Repeating Key ---");
 
     console.log(
@@ -582,76 +564,6 @@ function demoKeyReuse(pesan1, pesan2, key) {
     /* ---------------------------------------------------------
        POSISI CIPHERTEXT IDENTIK
     --------------------------------------------------------- */
-
-    const posisiIdentik = [];
-
-    const jumlahPosisi = Math.min(
-        ciphertext1.length,
-        ciphertext2.length
-    );
-
-
-    for (let i = 0; i < jumlahPosisi; i++) {
-
-        const c1 = ciphertext1[i];
-        const c2 = ciphertext2[i];
-
-        /*
-         * Hanya bandingkan posisi yang keduanya
-         * merupakan huruf.
-         */
-        if (
-            isLetter(c1) &&
-            isLetter(c2) &&
-            c1.toUpperCase() === c2.toUpperCase()
-        ) {
-
-            posisiIdentik.push({
-                position: i + 1,
-                plaintext1: c1,
-                plaintext2: c2,
-                ciphertext: c1,
-                key: key[
-                    posisiIdentik.length %
-                    key.length
-                ].toUpperCase(),
-            });
-        }
-    }
-
-
-    /* ---------------------------------------------------------
-       POSISI YANG DIBANDINGKAN
-    --------------------------------------------------------- */
-
-    let posisiDibandingkan = 0;
-
-    for (let i = 0; i < jumlahPosisi; i++) {
-
-        if (
-            isLetter(ciphertext1[i]) &&
-            isLetter(ciphertext2[i])
-        ) {
-            posisiDibandingkan++;
-        }
-    }
-
-
-    /* ---------------------------------------------------------
-       HASIL ANALISIS
-    --------------------------------------------------------- */
-
-    const jumlahIdentik =
-        posisiIdentik.length;
-
-    const persentaseIdentik =
-        posisiDibandingkan === 0
-            ? 0
-            : (
-                jumlahIdentik /
-                posisiDibandingkan
-            ) * 100;
-
 
     console.log(
         "\n--- Posisi Ciphertext yang Identik ---"
@@ -1160,4 +1072,57 @@ async function tampilkanMenu() {
    START PROGRAM
 ========================================================= */
 
-tampilkanMenu();
+function analyzeKeyReuse(pesan1, pesan2, key) {
+    const ciphertext1 = encrypt(pesan1, key).result;
+    const ciphertext2 = encrypt(pesan2, key).result;
+    const jumlahHuruf = Math.max(
+        pesan1.replace(/[^A-Za-z]/g, "").length,
+        pesan2.replace(/[^A-Za-z]/g, "").length
+    );
+    let repeatedKey = "";
+    for (let i = 0; i < jumlahHuruf; i++) {
+        repeatedKey += key[i % key.length].toUpperCase();
+    }
+
+    const posisiIdentik = [];
+    const comparison = [];
+    const jumlahPosisi = Math.min(ciphertext1.length, ciphertext2.length);
+    for (let i = 0; i < jumlahPosisi; i++) {
+        const c1 = ciphertext1[i];
+        const c2 = ciphertext2[i];
+        if (!isLetter(c1) || !isLetter(c2)) continue;
+        const sama = c1.toUpperCase() === c2.toUpperCase();
+        comparison.push({ position: i + 1, c1, c2, status: sama ? "IDENTIK" : "BERBEDA" });
+        if (sama) {
+            // Preserve the CLI's key index based on the number of matches.
+            posisiIdentik.push({
+                position: i + 1,
+                plaintext1: c1,
+                plaintext2: c2,
+                ciphertext: c1,
+                key: key[posisiIdentik.length % key.length].toUpperCase(),
+            });
+        }
+    }
+    const posisiDibandingkan = comparison.length;
+    const jumlahIdentik = posisiIdentik.length;
+    const persentaseIdentik = posisiDibandingkan === 0
+        ? 0 : (jumlahIdentik / posisiDibandingkan) * 100;
+    return { ciphertext1, ciphertext2, repeatedKey, posisiIdentik, comparison,
+        posisiDibandingkan, jumlahIdentik, persentaseIdentik };
+}
+
+function validasiSecurity(pesan1, pesan2, key) {
+    if (!pesan1 || pesan1.trim() === "") return "Error: Pesan 1 tidak boleh kosong.";
+    if (!pesan2 || pesan2.trim() === "") return "Error: Pesan 2 tidak boleh kosong.";
+    return validasi(pesan1, key);
+}
+
+const Vigenere = Object.freeze({
+    encrypt, decrypt, validasi, validasiSecurity, analyzeKeyReuse,
+    TEST_CASES, MAX_VISUALIZATION_STEPS,
+});
+
+if (typeof module !== "undefined" && module.exports) module.exports = Vigenere;
+if (typeof window !== "undefined") window.Vigenere = Vigenere;
+if (isCLI) tampilkanMenu();
